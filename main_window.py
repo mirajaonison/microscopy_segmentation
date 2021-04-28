@@ -8,7 +8,7 @@ class MainWindow(wx.Frame):
     preview_panel_x = 0.
     preview_panel_spacing = 5
     preview_panel_size = None
-    preview_panels = None
+    preview_panel = None
     default_directory = ""
     source_image = None
     default_image = None
@@ -26,8 +26,9 @@ class MainWindow(wx.Frame):
         default_image = wx.Image(
             self.preview_panel_size[0], self.preview_panel_size[1])
         self.default_image = default_image
-        self.preview_panels = self.build_preview_panels(
-            panel, self.preview_panel_x, self.preview_panel_y, self.preview_panel_size, self.preview_panel_spacing, default_image)
+        
+        self.preview_panel = preview.PanelPreview(panel, wx.Point(self.preview_panel_x, self.preview_panel_y), self.preview_panel_size, "Original", default_image)
+        self.preview_panel.image.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
         # Buttons
         # Import file  
         import_file_btn = button.Button(panel, "Import File...", wx.Point(
@@ -56,20 +57,11 @@ class MainWindow(wx.Frame):
         disk_processing.SATURATION = self.img_config["SATURATION"]
         disk_processing.VALUE = self.img_config["VALUE"]
 
-    def build_preview_panels(self, parent, x, y, size, spacing, default_image):
-        # Positioning
-        # First row
-        original = preview.PanelPreview(parent, wx.Point(
-            x, y), size, "Original", default_image)
-        original.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
-        
-        return [original]
-
     def open_file_browser(self, event):
         dlg = wx.FileDialog(self, message="Select a picture",
                             defaultDir=self.default_directory,
                             defaultFile="",
-                            wildcard=".tif", style=wx.FD_OPEN)
+                            wildcard="*.tif", style=wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             filepath = dlg.GetPath()
             with open(filepath, 'rb') as image_handle:
@@ -77,13 +69,13 @@ class MainWindow(wx.Frame):
             npimg = np.frombuffer(image_buffer, dtype=np.uint8)
             # Ignite
             self.source_image = cv2.imdecode(npimg, 1)
-            self.preview_image(0, wx.Image(self.transform_ndarray_to_bufferImage(self.source_image)))
+            self.preview_image(wx.Image(self.transform_ndarray_to_bufferImage(self.source_image)))
     def transform_ndarray_to_bufferImage(self, ndarray):
-        copy = cv2.imencode("*.tif", ndarray)[1]
+        copy = cv2.imencode(".tif", ndarray)[1]
         return BytesIO(copy.tostring())
 
-    def preview_image(self, index, image):
-        self.preview_panels[index].setImage(image)
+    def preview_image(self, image):
+        self.preview_panel.setImage(image)
     def OnLeftDown(self, event):
         """left mouse button is pressed"""
         pt = event.GetPosition()  # position tuple
@@ -93,7 +85,7 @@ class MainWindow(wx.Frame):
         img = cv2.circle(self.source_image, (row,col), 5, (255,0,0), 20)
         pt = (row,col)
         self.selectedInput.AppendText(str(pt))
-        self.preview_image(0, wx.Image(self.transform_ndarray_to_bufferImage(img)))
+        self.preview_image(wx.Image(self.transform_ndarray_to_bufferImage(img)))
     def selectInput(self, event):
         self.selectedInput = event.GetEventObject()
     def process(self, event):
@@ -107,11 +99,11 @@ class MainWindow(wx.Frame):
         gray = cv2.cvtColor(cut, cv2.COLOR_BGR2GRAY)
         # Thresholding
         (thr, img_thr) = cv2.threshold(gray, 128,
-                                   255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)              
+                                   255, cv2.THRESH_BINARY)              
         # Count white
         number_black = len(img_thr[img_thr == 0])
         # gray2bgr
         gray = cv2.cvtColor(img_thr, cv2.COLOR_GRAY2BGR)
         self.source_image[top[1]:bottom[1], top[0]:bottom[0]] = gray
-        self.preview_image(0, wx.Image(self.transform_ndarray_to_bufferImage(self.source_image)))
+        self.preview_image(wx.Image(self.transform_ndarray_to_bufferImage(self.source_image)))
         self.results.setValue(f"{number_black},{number_pixels - number_black},{number_pixels}")
