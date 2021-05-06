@@ -24,14 +24,16 @@ def density_points(image, n_points=256):
     inflections = np.where(np.diff(np.sign(second_derivative_graph)) != 0)[0]
     return ([pixel_intensity, intensity_density],maximas, inflections)
 def threshold_on_density(image, inflections, maximas):
-    if(len(maximas) != 3):
+    if(len(maximas) < 3):
         raise Exception("The picture is not bimodal")
-    idx = (np.abs(inflections - maximas[1])).argmin()
-    idx = idx if inflections[idx] < maximas[1] else idx - 1
-    lower = int(inflections[idx + 1])
-    upper = int(maximas[2])
+    idx = (np.abs(inflections - maximas[0])).argmin()
+    idx = idx if inflections[idx] < maximas[0] else idx - 1
+    lower = int(inflections[idx])
+    upper = int(maximas[0])
     # Select foreground
     return cv2.inRange(image, lower, upper)
 def prepare_image(image):
+    source = cv2.GaussianBlur(image, (3,3), 10)
+    source = cv2.convertScaleAbs(source, alpha=1.3)
     graysource = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    return cv2.GaussianBlur(graysource, (3,3), 5)
+    return graysource

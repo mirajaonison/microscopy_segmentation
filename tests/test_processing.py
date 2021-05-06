@@ -17,7 +17,6 @@ class TestProcessing(unittest.TestCase):
         histogram = cv2.calcHist([graysource], [0], None, [256], [0, 256])
         median = processing.percentile(histogram, 50)
         third_percentile = processing.percentile(histogram, 75)
-        print(median, third_percentile)
         edges = cv2.Canny(graysource, median, third_percentile)
         cv2.imshow("Edge detection", edges)
         cv2.waitKey(0)
