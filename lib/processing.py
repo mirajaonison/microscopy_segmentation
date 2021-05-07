@@ -24,7 +24,7 @@ def density_points(image, n_points=256):
     inflections = np.where(np.diff(np.sign(second_derivative_graph)) != 0)[0]
     return ([pixel_intensity, intensity_density],maximas, inflections)
 def threshold_on_density(image, inflections, maximas):
-    if(len(maximas) < 3):
+    if(len(maximas) > 3):
         raise Exception("The picture is not bimodal")
     idx = (np.abs(inflections - maximas[0])).argmin()
     idx = idx if inflections[idx] < maximas[0] else idx - 1

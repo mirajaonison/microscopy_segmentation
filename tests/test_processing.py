@@ -11,12 +11,10 @@ class TestProcessing(unittest.TestCase):
             img = kpneu.read()
             npimg = np.frombuffer(img, dtype=np.uint8)
             source = cv2.imdecode(npimg, 1)
-            self.source = source[369:3565, 148:4005]
-    def test_edge(self):
-        graysource = cv2.cvtColor(self.source, cv2.COLOR_BGR2GRAY)
-        histogram = cv2.calcHist([graysource], [0], None, [256], [0, 256])
-        median = processing.percentile(histogram, 50)
-        third_percentile = processing.percentile(histogram, 75)
-        edges = cv2.Canny(graysource, median, third_percentile)
-        cv2.imshow("Edge detection", edges)
-        cv2.waitKey(0)
+            #self.source = source[369:3565, 148:4005]
+            self.source = source[292:3623, 848:3417]
+    def test_density_points(self):
+        graysource = processing.prepare_image(self.source)
+        densities_gray, maximas_gray, inflections_gray = processing.density_points(graysource)
+        self.assertEqual(len(maximas_gray), 3)
+        
